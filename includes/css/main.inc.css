@@ -139,35 +139,31 @@ select {
   background-image: none;
 }
 
-.su-lockup--option-b .su-lockup__line2{
-  font-size:1.5rem;
+.su-lockup--option-b .su-lockup__line2 {
+  font-size: 1.5rem;
 }
 .su-lockup--option-b .su-lockup__line1 {
-  font-size:1.2rem;
+  font-size: 1.2rem;
 }
 
 .select2-container {
-    width: auto !important;
+  width: auto !important;
 }
 .slurm-form label {
-  display:block;
+  display: block;
 }
-span.label-note{
-  float:right;
+span.label-note {
+  float: right;
 }
-span.separator{
-  line-height:36px;
+span.separator {
+  line-height: 36px;
 }
-#narrative code{
-  display:block;
+#narrative code {
+  display: block;
 }
-
-h3 a.table-toggle {
-
+#copyBtn i {
+  padding-right: 4px
 }
-
-.collapsing {
-  transition-timing-function: ease-in;
+.form-control:focus::placeholder {
+  color: transparent;
 }
-
-#copyBtn i {padding-right:4px}

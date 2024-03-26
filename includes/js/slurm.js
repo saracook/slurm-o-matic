@@ -7,6 +7,8 @@
     },
     renderUI: function() {
       handleGPU(null);
+      checkSessionsStartup();
+      collapseResourceTableSession()
       var config = {};
       var i;
       var j;
@@ -15,7 +17,7 @@
         config = data;
         queueLength = config.queues.length;
         populateFakeGpu(config);
-        console.log('new config', config);
+        //console.log('new config', config);
         queueLength = config.queues.length;
         populateResourceTable(config);
         populateQueueRadio(config);
@@ -42,9 +44,27 @@
             $tableBody.append(tableRow);
           }
         }
+
         $('.table-toggle').click(function() {
           $(this).find('i').toggleClass('fas fa-plus fas fa-minus');
+          if (hasClass(this, 'collapsed')) {
+            sessionStorage.setItem('table-toggle', '');
+          } else {
+            sessionStorage.setItem('table-toggle', 'collapsed');
+          }
         });
+      }
+
+      function collapseResourceTableSession() {
+        var tableToggle = checkSession('table-toggle');
+        if (tableToggle) {
+          $('#resource-table').collapse();
+          var tableToggleIcon = $('.table-toggle i');
+          var showIcon = "fa-plus";
+          var hideIcon = "fa-minus";
+          tableToggleIcon.addClass(showIcon).removeClass(hideIcon);
+        }
+
       }
 
       function populateQueueRadio(config) {
@@ -93,7 +113,7 @@
             if (config.queues[i].name == "gpu") {
               var gpuNumber = config.queues[i].gpuNumber;
               populateGpus(gpuNumber);
-              console.log('gpuNumber', gpuNumber);
+              //console.log('gpuNumber', gpuNumber);
             }
 
           }
@@ -102,7 +122,7 @@
       }
 
       function populateGpus(gpus) {
-        console.log('populateGpus(gpus)', gpus);
+        //console.log('populateGpus(gpus)', gpus);
         var gpuTarget = $('#gpu');
         var gpuSpan = $('#gpuRange');
         gpuTarget.empty();
@@ -127,11 +147,11 @@
       }
 
       function populateNodes(nodes) {
-        var $nodes = $('#nodes');
+        var nodes = $('#nodes');
         var nodeSpan = $('#nodeRange');
-        $nodes.empty();
+        nodes.empty();
         for (j = 1; j <= nodes; j++) {
-          $nodes.append('<option value="' + j + '">' + j + '</option>');
+          nodes.append('<option value="' + j + '">' + j + '</option>');
         }
         nodeSpan.text(" up to " + nodes);
       }
@@ -587,6 +607,37 @@
           value = $(element).val();
         }
         return value;
+      }
+
+      function checkSessionsStartup() {
+        var sunetid = checkSession('sunetid');
+        console.log('sunetid', sunetid);
+        if (sunetid) {
+          $('.form-control').attr("value", "GeeksForGeeks").css('background-color','pink');
+          //autoFillSession('#sunetid', sunetid);
+        }
+
+      }
+
+      function saveToSession(field, fieldValue) {
+        sessionStorage.setItem(field, fieldValue);
+      }
+
+      function checkSession(field) {
+        var fieldValue = sessionStorage.getItem(field);
+        if (fieldValue) {
+          console.log('checkSession', field);
+          return fieldValue;
+
+        }
+      }
+
+      function autoFillSession(selector, fieldValue) {
+
+        $('#sunetid').css("border", "3px solid pink").addClass('funky');
+        field = $('#sunetid');
+        field.val(fieldValue);
+        console.log('fuck fuck fuck', field);
       }
 
       document.addEventListener('change', function(e) {
