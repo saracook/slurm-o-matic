@@ -12,6 +12,3 @@ vendor
 # Local Netlify folder
 .netlify
 Gemfile.lock
-
-# don't commit to master
-sherlock.html

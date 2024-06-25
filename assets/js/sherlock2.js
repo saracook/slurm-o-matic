@@ -581,7 +581,7 @@
           .then((data) => {
             const yaml = jsyaml.load(data);
             const json = JSON.stringify(yaml);
-            //console.log(json,json);
+            console.log(json,json);
             console.log(yaml.software_modules.categories);
             var moduleData = {};
             //loop through categories
@@ -591,7 +591,7 @@
 
 
 
-                        $('#modules').select2({
+             $('#modules').select2({
               theme: 'bootstrap4',
               width: 'resolve',
               selectionCssClass: ":all:",
@@ -616,7 +616,7 @@ return data.text;
           optionGroup = "<optgroup id='" + line.name + "' label='" + line.name + "' />";
           $('#modules').append(optionGroup);
           console.log('line', line.name);
-          if (line.name == "math") {
+          //if (line.name == "viz") {
             $.each(line.packages, function(index, package) {
               //console.log('package', JSON.stringify(package));
 
@@ -625,7 +625,7 @@ return data.text;
               $(newOption).append(optionGroup);
               console.log('optionGroup' + index, optionGroup)
             })
-          }
+          // }
         })
         console.log('optionGroup', optionGroup)
         return optionGroup;
@@ -634,13 +634,14 @@ return data.text;
       function populateOption(package, sessionModulesArray, category) {
         var newOptions = "<span />";
         var selectedModule = "";
-        /* if ($.inArray(line, sessionModulesArray) != -1) {
-        selectedModule = "selected";
-        }*/
-
         var isDefaultVersion;
         var optionPackage = package.package;
-        //console.log('optionPackage', optionPackage);
+        if ($.inArray(optionPackage, sessionModulesArray) != -1) {
+        selectedModule = "selected";
+        }
+
+
+        console.log('optionPackage', optionPackage);
         $.each(package.versions, function(index, version) {
           var thisVersion = version.versionName;
           var nameString = optionPackage + "/" + thisVersion;
@@ -660,7 +661,7 @@ return data.text;
             })
           })
           var newOption = `<option ${selectedModule} class="awesome" ${isDefaultVersion} data-category="${category}" value="${nameString}" ${propertyStrings}>${nameString}</option>`
-          //console.log('newOption new' + index, newOption);
+          console.log('newOption new' + index, newOption);
           $('#' + category).append(newOption);
 
         })
@@ -742,6 +743,7 @@ return data.text;
             generateScript();
           }
         }, false);
+
         $("#modules").on('select2:select', function(e) {
           console.log('clicken on it', e);
           var restricted = $(this).data();
@@ -754,7 +756,7 @@ return data.text;
           generateScript();
           getSaveData(e.node);
         });
-                $("#modules").on('select2:unselect',function() {
+          $("#modules").on('select2:unselect',function() {
           generateScript();
           getSaveData("#modules");
         })

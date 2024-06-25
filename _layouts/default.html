@@ -21,6 +21,9 @@
   <script src="/assets/js/decanter.js" type="text/javascript"></script>
   <link href="/assets/css/main.inc.css" rel="stylesheet" type="text/css">
   <!-- Custom JavaScript/css files set in YAML front matter -->
+  {% for code in page.headcode %}
+    {{ code }}
+  {% endfor %}
   {% for js in page.customjs %}
   <script type="text/javascript" src="{{ js }}"></script>
   {% endfor %}
