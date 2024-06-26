@@ -12,6 +12,7 @@
       var j;
       var queueLength;
       var resourceTable = $("#resource-table");
+      var moduleCategories = [];
 
       $.getJSON("/includes/sh_config.json", function(data) {
         config = data;
@@ -66,8 +67,6 @@
         }
       }
 
-
-
       function populateQueueRadio(config) {
         //check the session
         var sessionRadio = checkSession('queue_radio');
@@ -86,12 +85,12 @@
           var radioValue = uniqueArr[i];
           var radioId = radioValue.replace(/\s+/g, '-').toLowerCase();
           queueRadio.val(radioValue);
-          queueRadio.prop('id',radioId + i);
+          queueRadio.prop('id', radioId + i);
           if (radioValue == sessionRadio) {
             queueRadio.prop('checked', true);
           }
           queueRadio.appendTo(queueRow);
-          $('<label class="form-check-label mt-2">').prop('for',radioId + i).html(uniqueArr[i]).appendTo(queueRow);
+          $('<label class="form-check-label mt-2">').prop('for', radioId + i).html(uniqueArr[i]).appendTo(queueRow);
           $queueList.append(queueRow);
         }
         //if no session info, select the first radio so the user doesn't see a bunch of nonsense in the script box
@@ -189,9 +188,9 @@
             if (radioValue == sessionRadio) {
               gpuFlagRadio.prop('checked', true);
             }
-            gpuFlagRadio.attr("data-flag", config.queues[i].gpuFlag).prop('id',gpuFlagRadioId + i);
+            gpuFlagRadio.attr("data-flag", config.queues[i].gpuFlag).prop('id', gpuFlagRadioId + i);
             gpuFlagRadio.appendTo(gpuFlagRow);
-            $('<label class="form-check-label mt-2">').prop('for',gpuFlagRadioId + i).html(config.queues[i].gpus).appendTo(gpuFlagRow);
+            $('<label class="form-check-label mt-2">').prop('for', gpuFlagRadioId + i).html(config.queues[i].gpus).appendTo(gpuFlagRow);
           }
           $gpugroup.append(gpuFlagRow);
 
@@ -328,6 +327,17 @@
         if (gpuFlag) {
           gpuFlagStr = gpuFlag + "\n";
         }
+
+         // get list of module categories to load
+         //TODO: skip ones that are pre-loaded
+        getModuleCategories();
+          var moduleCategoryStr = "";
+        if (moduleCategories != null) {
+          moduleCategoryStr = "# first load the categories for your modules\n"
+          for (i = 0; i < moduleCategories.length; i++) {
+            moduleCategoryStr += "module load " + moduleCategories[i] + "\n";
+          }
+        }
         // Grab modules
         var modules;
         if ($('#modules').hasClass("select2-hidden-accessible")) {
@@ -348,6 +358,7 @@
           }
         }
 
+        
         // Grab commands
         var commands = $('#commands').val();
         var commandsStr = commands + "\n";
@@ -383,6 +394,7 @@
           stdoutStr +
           stderrStr +
           "# ----------------Load Modules--------------------\n" +
+          moduleCategoryStr +
           modulesStr +
           "# ----------------Commands------------------------\n" +
           commandsStr;
@@ -581,35 +593,33 @@
           .then((data) => {
             const yaml = jsyaml.load(data);
             const json = JSON.stringify(yaml);
-            console.log(json,json);
+            console.log(json, json);
             console.log(yaml.software_modules.categories);
             var moduleData = {};
             //loop through categories
             $.each(yaml.software_modules, function(key, value) {
-              populateOptionGroup(value, sessionModulesArray,moduleData);
+              populateOptionGroup(value, sessionModulesArray, moduleData);
             });
 
-
-
-             $('#modules').select2({
+            $('#modules').select2({
               theme: 'bootstrap4',
               width: 'resolve',
               selectionCssClass: ":all:",
               multiple: true,
               dropdownCssClass: ":all:",
-              templateSelection: function (data, container) {
-// Add custom attributes to the tag for the selected option
-$(data.element).attr('category', data.category);
-console.log('loop data',data);
-return data.text;
-}
+              templateSelection: function(data, container) {
+                // Add custom attributes to the tag for the selected option
+                $(data).attr('category', data.category);
+                console.log('loop data', data);
+                return data.text;
+              }
             });
             generateScript();
           })
 
       }
 
-      function populateOptionGroup(category, sessionModulesArray,moduleData) {
+      function populateOptionGroup(category, sessionModulesArray, moduleData) {
         selectedModule = "";
         var optionGroup;
         $.each(category, function(index, line) {
@@ -617,14 +627,14 @@ return data.text;
           $('#modules').append(optionGroup);
           console.log('line', line.name);
           //if (line.name == "viz") {
-            $.each(line.packages, function(index, package) {
-              //console.log('package', JSON.stringify(package));
+          $.each(line.packages, function(index, package) {
+            //console.log('package', JSON.stringify(package));
 
-              var newOption = populateOption(package, sessionModulesArray, line.name);
-              //console.log('newOption', newOption);
-              $(newOption).append(optionGroup);
-              console.log('optionGroup' + index, optionGroup)
-            })
+            var newOption = populateOption(package, sessionModulesArray, line.name);
+            //console.log('newOption', newOption);
+            $(newOption).append(optionGroup);
+            console.log('optionGroup' + index, optionGroup)
+          })
           // }
         })
         console.log('optionGroup', optionGroup)
@@ -637,10 +647,8 @@ return data.text;
         var isDefaultVersion;
         var optionPackage = package.package;
         if ($.inArray(optionPackage, sessionModulesArray) != -1) {
-        selectedModule = "selected";
+          selectedModule = "selected";
         }
-
-
         console.log('optionPackage', optionPackage);
         $.each(package.versions, function(index, version) {
           var thisVersion = version.versionName;
@@ -660,7 +668,7 @@ return data.text;
               console.log('prop ' + propertyStrings);
             })
           })
-          var newOption = `<option ${selectedModule} class="awesome" ${isDefaultVersion} data-category="${category}" value="${nameString}" ${propertyStrings}>${nameString}</option>`
+          var newOption = `<option ${selectedModule} class="awesome" ${isDefaultVersion} title="${category}" value="${nameString}" ${propertyStrings}>${nameString}</option>`
           console.log('newOption new' + index, newOption);
           $('#' + category).append(newOption);
 
@@ -723,6 +731,28 @@ return data.text;
         }
       }
 
+          
+
+      function getModuleCategories() {
+        var theseModules = $('#modules').select2('data');
+        console.log('theseModules', theseModules);
+        moduleCategories = [];
+        if (theseModules != null) {
+          for (i = 0; i < theseModules.length; i++) {
+            var thisModule = theseModules[i];
+            category = thisModule.title;
+            //TODO if this works - move category off title attribute
+            if (category) {
+              // reject duplicates here
+              if (moduleCategories.indexOf(category) === -1) {
+                moduleCategories.push(category);
+              }
+            }
+            console.log('moduleCategories', moduleCategories);
+          }
+        }
+      }
+
       function bindEvents() {
         document.addEventListener('change', function(e) {
           var node = e.target;
@@ -745,18 +775,10 @@ return data.text;
         }, false);
 
         $("#modules").on('select2:select', function(e) {
-          console.log('clicken on it', e);
-          var restricted = $(this).data();
-          if (restricted) {
-            console.log('clicked', restricted);
-          } else {
-            console.log('nope', e);
-          }
-
           generateScript();
           getSaveData(e.node);
         });
-          $("#modules").on('select2:unselect',function() {
+        $("#modules").on('select2:unselect', function() {
           generateScript();
           getSaveData("#modules");
         })
