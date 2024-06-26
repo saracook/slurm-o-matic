@@ -332,7 +332,7 @@
          //TODO: skip ones that are pre-loaded
         getModuleCategories();
           var moduleCategoryStr = "";
-        if (moduleCategories != null) {
+        if (moduleCategories) {
           moduleCategoryStr = "# first load the categories for your modules\n"
           for (i = 0; i < moduleCategories.length; i++) {
             moduleCategoryStr += "module load " + moduleCategories[i] + "\n";
@@ -601,18 +601,10 @@
               populateOptionGroup(value, sessionModulesArray, moduleData);
             });
 
-            $('#modules').select2({
+                        $('#modules').select2({
               theme: 'bootstrap4',
               width: 'resolve',
-              selectionCssClass: ":all:",
-              multiple: true,
-              dropdownCssClass: ":all:",
-              templateSelection: function(data, container) {
-                // Add custom attributes to the tag for the selected option
-                $(data).attr('category', data.category);
-                console.log('loop data', data);
-                return data.text;
-              }
+              multiple: true
             });
             generateScript();
           })
