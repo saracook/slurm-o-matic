@@ -565,7 +565,7 @@
       //integrating a session check
       function populateModules(config) {
         var moduleSelect = $('#modules');
-        moduleSelect.empty();
+        //moduleSelect.empty();
         var modListPath = config.config.apps_url;
         var sessionModules = checkSession('modules');
         var sessionModulesArray;
