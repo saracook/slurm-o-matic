@@ -14,8 +14,20 @@
       var resourceTable = $("#resource-table");
       var moduleCategories = [];
 
-      $.getJSON("/includes/sh_config.json", function(data) {
-        config = data;
+fetch("./includes/facts.yml")
+          .then(response => response.text())
+          .then((data) => {
+            const yaml = jsyaml.load(data);
+                        console.log('yaml',yaml);
+            const json = JSON.stringify(yaml);
+            console.log('facts',yaml.facts);
+            var partitionData = {};
+            //loop through categories
+            $.each(yaml.facts.partitions.fields, function(key, value) {
+              populateOptionGroup(value, sessionModulesArray, moduleData);
+            });
+
+/*        config = data;
         queueLength = config.queues.length;
         populateFakeGpu(config);
 
@@ -32,7 +44,7 @@
         bindEvents();
         return;
       }).fail(function(e) {
-        //console.log("An error has occurred.", e);
+        //console.log("An error has occurred.", e);*/
       });
 
       function populateResourceTable(config) {
@@ -328,10 +340,10 @@
           gpuFlagStr = gpuFlag + "\n";
         }
 
-         // get list of module categories to load
-         //TODO: skip ones that are pre-loaded
+        // get list of module categories to load
+        //TODO: skip ones that are pre-loaded
         getModuleCategories();
-          var moduleCategoryStr = "";
+        var moduleCategoryStr = "";
         if (moduleCategories) {
           moduleCategoryStr = "# first load the categories for your modules\n"
           for (i = 0; i < moduleCategories.length; i++) {
@@ -358,7 +370,6 @@
           }
         }
 
-        
         // Grab commands
         var commands = $('#commands').val();
         var commandsStr = commands + "\n";
@@ -601,7 +612,7 @@
               populateOptionGroup(value, sessionModulesArray, moduleData);
             });
 
-                        $('#modules').select2({
+            $('#modules').select2({
               theme: 'bootstrap4',
               width: 'resolve',
               multiple: true
@@ -722,8 +733,6 @@
           saveToSession(fieldId, fieldValue);
         }
       }
-
-          
 
       function getModuleCategories() {
         var theseModules = $('#modules').select2('data');
