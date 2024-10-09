@@ -11,6 +11,7 @@
       var i;
       var j;
       var queueLength;
+      var notGpuWildCard = true;
       var resourceTable = $("#resource-table");
 
       $.getJSON("includes/config.json", function(data) {
@@ -84,12 +85,12 @@
           var radioValue = uniqueArr[i];
           var radioId = radioValue.replace(/\s+/g, '-').toLowerCase();
           queueRadio.val(radioValue);
-          queueRadio.prop('id',radioId + i);
+          queueRadio.prop('id', radioId + i);
           if (radioValue == sessionRadio) {
             queueRadio.prop('checked', true);
           }
           queueRadio.appendTo(queueRow);
-          $('<label class="form-check-label mt-2">').prop('for',radioId + i).html(uniqueArr[i]).appendTo(queueRow);
+          $('<label class="form-check-label mt-2">').prop('for', radioId + i).html(uniqueArr[i]).appendTo(queueRow);
           $queueList.append(queueRow);
         }
         //if no session info, select the first radio so the user doesn't see a bunch of nonsense in the script box
@@ -118,7 +119,7 @@
             populateMemory(memory)
             var nodeCount = config.queues[i].nodes;
             populateNodes(nodeCount);
-            saveToSession('nodeTotal',nodeCount);
+            saveToSession('nodeTotal', nodeCount);
             if (config.queues[i].name == "gpu") {
               var gpuNumber = config.queues[i].gpuNumber;
               populateGpus(gpuNumber);
@@ -130,42 +131,72 @@
       }
 
       function populateGpus(gpus) {
+        console.log('notGpuWildCard', notGpuWildCard);
+        var sessionRadio = checkSession('gpu_radio');
+        if (sessionRadio == "none") {
+          notGpuWildCard = false;
+        }
         var gpuTarget = $('#gpu');
         var gpuSpan = $('#gpuRange');
+        var gpuHelp = $('#gpuHelp');
+        var nodeQuantity = checkSession('nodes');
+        if (!nodeQuantity) {
+          nodeQuantity = 1;
+          saveToSession('nodes', 1);
+        }
+        saveToSession('gpuLimit', gpus);
+        var gpusCalc = nodeQuantity * gpus;
+        if (notGpuWildCard) { //wildcard is already calculated
+          gpusCalc = gpus
+        }
         gpuTarget.empty();
-        for (j = 1; j <= gpus; j++) {
+        gpuSpan.empty();
+        for (j = 1; j <= gpusCalc; j++) {
           gpuTarget.append('<option value="' + j + '">' + j + '</option>');
         }
-        gpuSpan.text(" up to " + gpus);
+        var nodeTotal = checkSession('nodeTotal');
+        var getMoreNodes = "";
+        if (nodeQuantity < nodeTotal) {
+          getMoreNodes = ", increase nodes for more GPUs"
+        }
+        if (gpus && notGpuWildCard) {
+          gpuHelp.text("limit of " + gpus + " GPUs per node" + getMoreNodes);
+        }
+
+        gpuSpan.text(" up to " + gpusCalc);
       }
 
       function populateCores(limit) {
         var cpu = $('#cpu');
         var cpuSpan = $('#coreRange');
+        var cpuHelp = $('#cpuHelp');
         var nodeQuantity = checkSession('nodes');
-        //console.log('nodeQuantity first',nodeQuantity);
-        if (!nodeQuantity){
+        if (!nodeQuantity) {
           nodeQuantity = 1;
           saveToSession('nodes', 1);
         }
-        //console.log('nodeQuantity',nodeQuantity);
         saveToSession('coresLimit', limit);
         var coresCalc = nodeQuantity * limit;
-        //console.log('coresCalc',coresCalc);
+        if (notGpuWildCard) { //wildcard is already calculated
+          coresCalc = limit
+        }
         cpu.empty();
+        cpuSpan.empty();
+        cpuHelp.empty();
         for (j = 1; j <= coresCalc; j++) {
           cpu.append('<option value="' + j + '">' + j + '</option>');
         }
+
         cpuSpan.text(" up to " + coresCalc);
-        var cpuHelp = $('#cpuHelp');
+
         var nodeTotal = checkSession('nodeTotal');
         var getMoreNodes = "";
-        if (nodeQuantity < nodeTotal){
+        if (nodeQuantity < nodeTotal) {
           getMoreNodes = ", increase nodes for more CPUs"
         }
         //console.log('getMoreNodes',getMoreNodes + " " + nodeQuantity  + " " + nodeTotal);
-        if (limit) {
-          $('#cpuHelp').text("limit of " + limit + " CPUs per node" + getMoreNodes);
+        if (limit && notGpuWildCard) {
+          cpuHelp.text("limit of " + limit + " CPUs per node" + getMoreNodes);
         }
       }
 
@@ -181,12 +212,16 @@
 
       function populateMemory(memory) {
         var $memory = $('#memory');
+        var memSpan = $('#memRange');
+        var memoryNum = config.queues[i].memoryNum;
+        memSpan.empty();
         $memory.empty();
         $memory.append('<option value="' + "500M" + '">.5 (500MB)</option>');
         for (j = 1; j <= config.queues[i].memoryNum; j++) {
           $memory.append('<option value="' + j + 'G">' + j + '</option>');
         }
         $($memory).val("1G");
+        memSpan.text(" up to " + memoryNum + "GB");
       }
 
       function populateGpuRadio(config) {
@@ -204,57 +239,50 @@
             if (radioValue == sessionRadio) {
               gpuFlagRadio.prop('checked', true);
             }
-            gpuFlagRadio.attr("data-flag", config.queues[i].gpuFlag).prop('id',gpuFlagRadioId + i);
+            gpuFlagRadio.attr("data-flag", config.queues[i].gpuFlag).prop('id', gpuFlagRadioId + i);
             gpuFlagRadio.appendTo(gpuFlagRow);
-            $('<label class="form-check-label mt-2">').prop('for',gpuFlagRadioId + i).html(config.queues[i].gpus).appendTo(gpuFlagRow);
+            $('<label class="form-check-label mt-2">').prop('for', gpuFlagRadioId + i).html(config.queues[i].gpus).appendTo(gpuFlagRow);
           }
           $gpugroup.append(gpuFlagRow);
 
         }
       }
-      //makes a list of gpus and finds max among all flavors for generic option and creates new entry in config.
+      //makes a list of gpus and adds all flavors for generic option and creates new entry in config.
       function populateFakeGpu(config) {
         var $gpugroup = $('#choose-gpu');
-        var minNodes = 0;
-        var minMem = 0;
-        var minCores = 0;
-        var minCoresLim = 0;
-        var minGpu = 0;
-        //start finding lowest number
+        var allNodes = 0;
+        var allMem = 0;
+        var allCores = 0;
+        var allCoresLim = 0;
+        var allGpu = 0;
+        //now the math maths
         for (i = 0; i < queueLength; i++) {
           if (config.queues[i].gpuFlag) {
-            var minNodesTest = config.queues[i].nodes;
-            var minMemTest = config.queues[i].memoryNum;
-            var minCoresLimTest = config.queues[i].coresLimit;
-            var minCoresTest = config.queues[i].cores;
-            var minGpuTest = config.queues[i].gpuNumber;
-            if (minCores < minCoresTest) {
-              minCores = minCoresTest;
-            }
-            if (minNodes < minNodesTest) {
-              minNodes = minNodesTest;
-            }
-            if (minCoresLim < minCoresLimTest) {
-              minCoresLim = minCoresLimTest;
-            }
-            if (minGpu < minGpuTest) {
-              minGpu = minGpuTest;
-            }
-            if (minMem < minMemTest) {
-              minMem = minMemTest;
-            }
+            console.log('raw', config.queues[i]);
+            deesNodes = parseInt(config.queues[i].nodes);
+            allNodes += parseInt(config.queues[i].nodes);
+            allMem += (deesNodes * config.queues[i].memoryNum);
+            allCoresLim += (deesNodes * config.queues[i].coresLimit);
+            allCores += (deesNodes * config.queues[i].cores);
+            allGpu += deesNodes * config.queues[i].gpuNumber;
+            console.log('allNodes', allNodes + " " + config.queues[i].nodes);
+            console.log('allCores', allCoresLim + " " + config.queues[i].coresLimit);
+            console.log('allGpu', allGpu + " " + config.queues[i].gpuNumber);
+            console.log('allMem', allMem + " " + config.queues[i].memoryNum);
+
           }
         } //end loop
         config.queues.push({
-          "name": "gpu",
-          "gpus": "No preference",
-          "gpuId": "None",
-          "memoryNum": minMem,
-          "nodes": minNodes,
-          "gpuNumber": minGpu,
-          "cores": minCores,
-          "coresLimit": minCoresLim
-        })
+            "name": "gpu",
+            "gpus": "No preference",
+            "gpuId": "None",
+            "memoryNum": allMem,
+            "nodes": allNodes,
+            "gpuNumber": allGpu,
+            "cores": allCores,
+            "coresLimit": allCoresLim
+          }),
+          console.log("config.queues", config.queues);
       }
 
       function handleGPU(queue) {
@@ -264,7 +292,9 @@
           if ($(".gpu-flag-radio:checked").length == 0) {
             //select the last radio, so the user doesn't see a bunch of nonsense in the script box
             $('#choose-gpu .gpu-flag-radio').last().prop("checked", true);
+            notGpuWildCard = false;
             populateResourceDropdowns(config);
+            saveToSession('gpu_radio', 'none');
           }
 
         } else { //unselect/dump gpu options
@@ -272,7 +302,10 @@
           $(".gpu-flag-radio").prop('checked', false);
           var $gpus = $('#gpu');
           $gpus.empty();
+          saveToSession('gpu_radio', '');
+          notGpuWildCard = true;
         }
+
       }
 
       async function copyTextToClipboard(text) {
@@ -520,7 +553,7 @@
           hourString +
           minString +
           outputString +
-          emailString +
+          //emailString +
           jobHelpString;
         narrative.html(narrativeString);
       }
@@ -682,6 +715,12 @@
           } else if (hasClass(node, 'gpu-flag-radio')) {
             var selected_value = $(".gpu-flag-radio:checked").val();
             saveToSession('gpu_radio', selected_value);
+            console.log('gpu_radio', selected_value);
+            if (selected_value == "none") {
+              notGpuWildCard = false;
+            } else {
+              notGpuWildCard = true;
+            }
             populateResourceDropdowns(config);
             generateScript();
           } else {
@@ -690,13 +729,15 @@
         }, false);
         $("#nodes").on('select2:select', function(e) {
           var limit = checkSession('coresLimit');
+          var gpus = checkSession('gpuLimit');
           populateCores(limit);
+          populateGpus(gpus);
         });
         $("#modules").on('select2:select', function(e) {
           generateScript();
           getSaveData(e.node);
         });
-        $("#modules").on('select2:unselect',function() {
+        $("#modules").on('select2:unselect', function() {
           generateScript();
           getSaveData("#modules");
         })

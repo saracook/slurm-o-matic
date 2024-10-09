@@ -68,6 +68,7 @@ customjs: ./assets/js/slurm.js
       <select id="gpu" class="form-control fancy-dropdown">
         <option selected value="<>">---</option>
       </select>
+      <small id="gpuHelp" class="form-text text-muted"></small>
     </div>
     <div class="form-group" id='runtime'>
       <label>Running Time</label>
@@ -104,6 +105,10 @@ customjs: ./assets/js/slurm.js
       </div>
 
       <h2>Recommended Settings</h2>
+      <div class="form-group">
+        <label>SUnetID</label>
+        <input type="text" class="form-control" name="sunetid" id="sunetid" placeholder="" maxlength="8" />
+      </div>
       <div class="form-group">
         <label>Job Name</label>
         <input type="text" class="form-control" name="jobname" id="jobname" placeholder="Name this job" />
